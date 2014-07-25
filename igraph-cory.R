@@ -3,6 +3,67 @@
 library(igraph)
 
 
+# Read a .cl file into a list of numerical vectors
+read.cl <- function(file, split = ' ') {
+    lines <- readLines(file)
+    lst <- if(length(lines) == 0) {
+        list()
+    }
+    else {
+        lapply(sapply(lines, strsplit, split = split, USE.NAMES = FALSE),
+               as.numeric)
+    }
+    return(lst)
+}
+
+# Read a hyperedge list into an (undirected) graph object
+graph.hyperedgelist <- function (hel, loops = FALSE) {
+    if (!is.list(hel) || !all(sapply(hel, is.numeric))) {
+        stop("graph.hyperedgelist expects a list of numerical vectors")
+    }
+    if (any(sapply(hel, length) == 1)) {
+        warning('trivial hyperedges omitted')
+    }
+    if (length(hel) == 0) {
+        res <- graph.empty(directed = FALSE)
+    }
+    else {
+        if (!loops) hel <- lapply(hel, unique)
+        res <- graph(t(do.call(rbind, lapply(lapply(hel, combn, m = 2), t))),
+                     directed = FALSE)
+    }
+    res
+}
+
+
+plot.onemode <- function(
+    graph, vertex.shape = 'circle', vertex.color = 'SkyBlue2',
+    vertex.label.color = 'white',
+    vertex.size = 2 + 30 / (vcount(graph) ^ 2),
+    edge.width = .5 + 2 / ecount(graph), edge.color = 'black', ...) {
+    plot(graph, layout = layout.fruchterman.reingold(graph),
+         vertex.shape = vertex.shape, vertex.color = vertex.color,
+         vertex.label.color = vertex.label.color, vertex.size = vertex.size,
+         edge.width = edge.width, edge.color = edge.color, ...)
+}
+
+plot.twomode <- function(
+    bigraph, vertex.shape = c('circle', 'square'),
+    vertex.color = c('SkyBlue2', 'lightcoral'),
+    vertex.label.color = rep('white', 2),
+    vertex.size = c(2 + 30 / (vcount(bigraph) ^ 2),
+                    1.5 + 24 / (vcount(bigraph) ^ 2)),
+    edge.width = .5 + 2 / ecount(bigraph), edge.color = 'black', ...) {
+    
+    plot(bigraph, layout = layout.fruchterman.reingold(bigraph),
+         vertex.shape = vertex.shape[V(bigraph)$type + 1],
+         vertex.color = vertex.color[V(bigraph)$type + 1],
+         vertex.label.color = vertex.label.color[V(bigraph)$type + 1],
+         vertex.size = vertex.size[V(bigraph)$type + 1],
+         edge.width = edge.width, edge.color = edge.color, ...)
+}
+
+
 # Hall's criterion for the existence of a system of distinct representatives
 hall.criterion <- function(lst) all(sapply(0:(2 ^ length(lst) - 1),
                                            function(i) {
