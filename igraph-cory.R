@@ -1,41 +1,5 @@
 # Basic igraph functions
 
-library(igraph)
-
-
-# Read a .cl file into a list of numerical vectors
-read.cl <- function(file, split = ' ') {
-    lines <- readLines(file)
-    lst <- if(length(lines) == 0) {
-        list()
-    }
-    else {
-        lapply(sapply(lines, strsplit, split = split, USE.NAMES = FALSE),
-               as.numeric)
-    }
-    return(lst)
-}
-
-# Read a hyperedge list into an (undirected) graph object
-graph.hyperedgelist <- function (hel, loops = FALSE) {
-    if (!is.list(hel) || !all(sapply(hel, is.numeric))) {
-        stop("graph.hyperedgelist expects a list of numerical vectors")
-    }
-    if (any(sapply(hel, length) == 1)) {
-        warning('trivial hyperedges omitted')
-    }
-    if (length(hel) == 0) {
-        res <- graph.empty(directed = FALSE)
-    }
-    else {
-        if (!loops) hel <- lapply(hel, unique)
-        res <- graph(t(do.call(rbind, lapply(lapply(hel, combn, m = 2), t))),
-                     directed = FALSE)
-    }
-    res
-}
-
-
 plot.onemode <- function(
     graph, vertex.shape = 'circle', vertex.color = 'SkyBlue2',
     vertex.label.color = 'white',
@@ -50,9 +14,9 @@ plot.onemode <- function(
 plot.twomode <- function(
     bigraph, vertex.shape = c('circle', 'square'),
     vertex.color = c('SkyBlue2', 'lightcoral'),
-    vertex.label.color = rep('white', 2),
-    vertex.size = c(2 + 30 / (vcount(bigraph) ^ 2),
-                    1.5 + 24 / (vcount(bigraph) ^ 2)),
+    vertex.label.color = rep('black', 2),
+    vertex.size = c(16 + 30 / (vcount(bigraph) ^ 2),
+                    12 + 24 / (vcount(bigraph) ^ 2)),
     edge.width = .5 + 2 / ecount(bigraph), edge.color = 'black', ...) {
     
     plot(bigraph, layout = layout.fruchterman.reingold(bigraph),
@@ -64,66 +28,16 @@ plot.twomode <- function(
 }
 
 
-# Hall's criterion for the existence of a system of distinct representatives
-hall.criterion <- function(lst) all(sapply(0:(2 ^ length(lst) - 1),
-                                           function(i) {
-    w <- which(intToBits(i) == 1)
-    length(unique(unlist(lst[w]))) >= length(w)
-}))
-
-
-# BIJECTIONS BETWEEN POSITIVE INTEGERS AND BOUNDED PARTITIONS
-
-# k-combination at a given rev-lex position
-position.combination <- function(k, i) {
-  vec <- c()
-  N <- i
-  for(j in k:1) {
-    c <- j - 1
-    while(choose(c + 1, j) <= N) c <- c + 1
-    vec <- c(vec, c)
-    N <- N - choose(c, j)
-  }
-  return(vec)
-}
-
-# Rev-lex position of a given k-combination of [0 : (n - 1)], k = length(vec)
-combination.position <- function(vec) {
-  stopifnot(!is.unsorted(rev(vec), strictly = TRUE))
-  sum(choose(rev(vec), 1:length(vec)))
-}
-
-# Biject between combinations and partitions
-
-# k-part partition corresponding to a given k-combination of [0 : (n - 1)]
-combination.partition <- function(vec) vec - (length(vec) - 1):0
-
-# k-combination of [0 : (n - 1)] corresponding to a given k-part partition
-partition.combination <- function(lambda) lambda + (length(lambda) - 1):0
-
-# Compose the bijections to biject between positions and partitions
-
-# k-part partition at a given rev-lex position
-position.partition <- function(k, i) {
-  combination.partition(position.combination(k, i))
-}
-
-# Rev-lex position of a given k-part partition
-partition.position <- function(lambda) {
-  combination.position(partition.combination(lambda))
-}
-
-
 # GRAPH OBJECT MANIPULATION
 
 # Extract the largest component of a graph as a new graph
 largest.component <- function(graph) {
-  if(is.connected(graph) == TRUE) return(graph)
-  decompose.graph(
-    graph,
-    max.comps = 1,
-    min.vertices = max(clusters(graph)$csize)
-  )[[1]]
+    if(is.connected(graph) == TRUE) return(graph)
+    decompose.graph(
+        graph,
+        max.comps = 1,
+        min.vertices = max(clusters(graph)$csize)
+    )[[1]]
 }
 
 
@@ -131,13 +45,13 @@ largest.component <- function(graph) {
 
 # joint degree distribution
 joint.degree <- function(graph) {
-  d <- degree(graph); dmax <- max(d)
-  el <- get.edgelist(graph, names = FALSE)
-  dl <- as.data.frame(cbind(d[el[, 1]], d[el[, 2]]))
-  dd <- aggregate(dl, by = dl[, 1:2], length)
-  jdmat <- matrix(0, nr = dmax, nc = dmax)
-  for(i in 1:dim(dd)[1]) jdmat[dd[i, 1], dd[i, 2]] <- dd[i, 3]
-  jdmat + t(jdmat)
+    d <- degree(graph); dmax <- max(d)
+    el <- get.edgelist(graph, names = FALSE)
+    dl <- as.data.frame(cbind(d[el[, 1]], d[el[, 2]]))
+    dd <- aggregate(dl, by = dl[, 1:2], length)
+    jdmat <- matrix(0, nr = dmax, nc = dmax)
+    for(i in 1:dim(dd)[1]) jdmat[dd[i, 1], dd[i, 2]] <- dd[i, 3]
+    jdmat + t(jdmat)
 }
 
 # http://web.archiveorange.com/archive/v/yj6N4iYyQO7lBJzoYXsT
@@ -147,17 +61,17 @@ joint.degree <- function(graph) {
 
 # second-order assortativity (Zhou???Cox)
 second.order.assortativity <- function(graph, coeff = 'max') {
-  stop('Implementation incomplete')
+    stop('Implementation incomplete')
 }
 # second.order.assortativity(graph)
 # second.order.assortativity(graph, coeff = 'max')
 
 # productivity-cooperativity correlation
 modal.assortativity <- function(bigraph) {
-  el <- get.edgelist(bigraph, names = FALSE)
-  a <- degree(bigraph, v = el[, 1]) - 1
-  q <- degree(bigraph, v = el[, 2]) - 1
-  (mean(a * q) - mean(a) * mean(q)) / (sd(a) * sd(q))
+    el <- get.edgelist(bigraph, names = FALSE)
+    a <- degree(bigraph, v = el[, 1]) - 1
+    q <- degree(bigraph, v = el[, 2]) - 1
+    (mean(a * q) - mean(a) * mean(q)) / (sd(a) * sd(q))
 }
 
 
@@ -165,107 +79,107 @@ modal.assortativity <- function(bigraph) {
 
 # s-metric (Li et al)
 s.metric <- function(graph) {
-  ge <- get.edges(graph, E(graph))
-  sum(degree(graph, ge[, 1]) * degree(graph, ge[, 2]))
+    ge <- get.edges(graph, E(graph))
+    sum(degree(graph, ge[, 1]) * degree(graph, ge[, 2]))
 }
 
 # graphicality test (Tripathi???Vijay)
 is.graphical <- function(degseq) {
-  ds <- sort(degseq[which(degseq != 0)], decreasing = TRUE)
-  if(length(ds) == 1) return(FALSE)
-  S <- sum(ds)
-  if(S %% 2 != 0) return(FALSE)
-  if(S == 0) return(TRUE)
-  p <- length(ds)
-  m <- rev(hist(ds, breaks = 0:max(ds) + .5, plot = FALSE)$counts)
-  m <- m[which(m != 0)]
-  sigma <- sapply(1:length(m), function(k) sum(m[1:k]))
-  LHS <- sapply(sigma, function(x) sum(ds[1:x]))
-  RHS1 <- sigma * (sigma - 1)
-  RHS2 <- c(sapply(sigma[1:(length(sigma) - 1)], function(x) sum(
-    sapply(ds[(x + 1):p], function(y) min(x,y))
-  )), 0)
-  RHS <- RHS1 + RHS2
-  sigma.TF <- ((LHS <= RHS) | (is.na(RHS)))
-  return(all(sigma.TF))
+    ds <- sort(degseq[which(degseq != 0)], decreasing = TRUE)
+    if(length(ds) == 1) return(FALSE)
+    S <- sum(ds)
+    if(S %% 2 != 0) return(FALSE)
+    if(S == 0) return(TRUE)
+    p <- length(ds)
+    m <- rev(hist(ds, breaks = 0:max(ds) + .5, plot = FALSE)$counts)
+    m <- m[which(m != 0)]
+    sigma <- sapply(1:length(m), function(k) sum(m[1:k]))
+    LHS <- sapply(sigma, function(x) sum(ds[1:x]))
+    RHS1 <- sigma * (sigma - 1)
+    RHS2 <- c(sapply(sigma[1:(length(sigma) - 1)], function(x) sum(
+        sapply(ds[(x + 1):p], function(y) min(x,y))
+    )), 0)
+    RHS <- RHS1 + RHS2
+    sigma.TF <- ((LHS <= RHS) | (is.na(RHS)))
+    return(all(sigma.TF))
 }
 
 # approximate s_max (Beichl???Cloteaux; implementation: Brunson)
 smax.approx.graph <- function(degseq) {
-  stopifnot(is.numeric(degseq))
-  ds <- sort(degseq[which(degseq != 0)], decreasing = TRUE)
-  p <- length(ds)
-  if(p == 0) return(graph.empty(n = 0, directed = FALSE)) else d <- ds[1]
-  m <- rev(hist(ds, breaks = 0:d + .5, plot = FALSE)$counts)
-  sigma <- sapply(1:d, function(k) sum(m[1:k]))
-  NZ <- if(d == tail(ds, n = 1)) rep(0, p) else
-  sigma * (sigma - 1) + c(sapply(1:(d - tail(ds, n = 1)), function(i) {
-    k <- 1 + if(sigma[i] < d) max(sigma[i], sigma[d - sigma[i]]) else sigma[i]
-    sum((k - 1 - sigma[i]) * sigma[i], sum(ds[k:p]), na.rm = TRUE)
-  }), rep(0, tail(ds, n = 1))) - sapply(sigma, function(x) sum(ds[1:x]))
-  if(any(NZ < 0)) stop('NZ < 0')
-  edges <- c()
-  n1 <- 1
-  n2 <- n1 + 1
-  while(any(ds[n1:p] > 0)) {
-    while(ds[n1] > 0) {
-      if(n2 == p + 1) stop(
-        paste('Cannot complete graph: ds = ', ds, '; n1 = ', n1, sep = '')
-      )
-      if(ds[n2] > 0) {
-        m12 <- d - ds[c(n1, n2)] + 1
-        sigma.alt <- sigma
-        NZ.alt <- NZ
-        for(k in m12) {
-          NZ.alt[k:d] <- NZ.alt[k:d] + c(d - k + 1, rep(1, d - k))
-          NZ.alt[k] <- NZ.alt[k] - 2 * (sigma.alt[k] - 1)
-          ell <- min(d - sigma.alt[k] + 1, d)
-          NZ.alt[k] <- NZ.alt[k] + min(sigma.alt[k] - 1, d - k) -
-          if(k < ell) (sigma.alt[ell] - sigma.alt[k]) else 0
-          if(k > 1) for(j in 1:(k - 1)) {
-            NZ.alt[j] <- NZ.alt[j] - if(k + sigma.alt[j] > d) 1 else 0
-          }
-          sigma.alt[k] <- sigma.alt[k] - 1
-        }
-        if(all(NZ.alt >= 0)) {
-          edges <- append(edges, c(n1, n2))
-          ds[c(n1, n2)] <- ds[c(n1, n2)] - 1
-          for(k in m12) if(k == d) m[k] <- m[k] - 1 else {
-            m[c(k, k + 1)] <- m[c(k, k + 1)] + c(-1, 1)
-          }
-          sigma <- sigma.alt
-          NZ <- NZ.alt
-        }
-      }
-      n2 <- n2 + 1
-    }
-    n1 <- n1 + 1
+    stopifnot(is.numeric(degseq))
+    ds <- sort(degseq[which(degseq != 0)], decreasing = TRUE)
+    p <- length(ds)
+    if(p == 0) return(graph.empty(n = 0, directed = FALSE)) else d <- ds[1]
+    m <- rev(hist(ds, breaks = 0:d + .5, plot = FALSE)$counts)
+    sigma <- sapply(1:d, function(k) sum(m[1:k]))
+    NZ <- if(d == tail(ds, n = 1)) rep(0, p) else
+        sigma * (sigma - 1) + c(sapply(1:(d - tail(ds, n = 1)), function(i) {
+            k <- 1 + if(sigma[i] < d) max(sigma[i], sigma[d - sigma[i]]) else sigma[i]
+            sum((k - 1 - sigma[i]) * sigma[i], sum(ds[k:p]), na.rm = TRUE)
+        }), rep(0, tail(ds, n = 1))) - sapply(sigma, function(x) sum(ds[1:x]))
+    if(any(NZ < 0)) stop('NZ < 0')
+    edges <- c()
+    n1 <- 1
     n2 <- n1 + 1
-    while((m[1] == 0) & (length(m) > 1)) {
-      m <- m[2:d]
-      sigma <- sigma[2:d]
-      NZ <- NZ[2:d]
-      d <- d - 1
+    while(any(ds[n1:p] > 0)) {
+        while(ds[n1] > 0) {
+            if(n2 == p + 1) stop(
+                paste('Cannot complete graph: ds = ', ds, '; n1 = ', n1, sep = '')
+            )
+            if(ds[n2] > 0) {
+                m12 <- d - ds[c(n1, n2)] + 1
+                sigma.alt <- sigma
+                NZ.alt <- NZ
+                for(k in m12) {
+                    NZ.alt[k:d] <- NZ.alt[k:d] + c(d - k + 1, rep(1, d - k))
+                    NZ.alt[k] <- NZ.alt[k] - 2 * (sigma.alt[k] - 1)
+                    ell <- min(d - sigma.alt[k] + 1, d)
+                    NZ.alt[k] <- NZ.alt[k] + min(sigma.alt[k] - 1, d - k) -
+                        if(k < ell) (sigma.alt[ell] - sigma.alt[k]) else 0
+                    if(k > 1) for(j in 1:(k - 1)) {
+                        NZ.alt[j] <- NZ.alt[j] - if(k + sigma.alt[j] > d) 1 else 0
+                    }
+                    sigma.alt[k] <- sigma.alt[k] - 1
+                }
+                if(all(NZ.alt >= 0)) {
+                    edges <- append(edges, c(n1, n2))
+                    ds[c(n1, n2)] <- ds[c(n1, n2)] - 1
+                    for(k in m12) if(k == d) m[k] <- m[k] - 1 else {
+                        m[c(k, k + 1)] <- m[c(k, k + 1)] + c(-1, 1)
+                    }
+                    sigma <- sigma.alt
+                    NZ <- NZ.alt
+                }
+            }
+            n2 <- n2 + 1
+        }
+        n1 <- n1 + 1
+        n2 <- n1 + 1
+        while((m[1] == 0) & (length(m) > 1)) {
+            m <- m[2:d]
+            sigma <- sigma[2:d]
+            NZ <- NZ[2:d]
+            d <- d - 1
+        }
     }
-  }
-  return(graph(edges, directed = FALSE))
+    return(graph(edges, directed = FALSE))
 }
 
 # perform s_max approximation across connected subgraphs
 smax.componentwise <- function(graph) {
-  comp.inds <- clusters(graph)
-  smax.graph <- graph.empty(n = 0, directed = FALSE)
-  for(i in 1:comp.inds$no) smax.graph <- graph.disjoint.union(smax.graph,
-    smax.approx.graph(degree(graph, which(comp.inds$membership == i))))
-  return(smax.graph)
+    comp.inds <- clusters(graph)
+    smax.graph <- graph.empty(n = 0, directed = FALSE)
+    for(i in 1:comp.inds$no) smax.graph <- graph.disjoint.union(smax.graph,
+                                                                smax.approx.graph(degree(graph, which(comp.inds$membership == i))))
+    return(smax.graph)
 }
 
 # S-metric (s(g) - s_min) / (s_max - s_min) (Li et al)
 S.metric <- function(graph) {
-  D <- sort(degree(graph))
-  Z <- rep(D, D)
-  smin <- sum(Z * rev(Z)) / 2
-  (s.metric(graph) - smin) / (s.metric(smax.approx.graph(D)) - smin)
+    D <- sort(degree(graph))
+    Z <- rep(D, D)
+    smin <- sum(Z * rev(Z)) / 2
+    (s.metric(graph) - smin) / (s.metric(smax.approx.graph(D)) - smin)
 }
 
 
@@ -273,623 +187,20 @@ S.metric <- function(graph) {
 
 # approximate clustering corrected for assortativity (Soffer and Vasquez 2005)
 soffer.vasquez.transitivity <- function(
-  graph, vids = V(graph), type = 'global', mode = 'approx'
-  ) {
-  stopifnot(mode == 'approx')
-  k <- degree(graph)
-  t <- transitivity(graph, vids = vids, type = 'local') * choose(k[vids], 2)
-  Omega <- sapply(neighborhood(graph, 1, nodes = vids), function(vec) {
-    k0 <- length(vec) - 1
-    if(k0 < 1) NaN else
-    floor(sum(sapply(vec[-1], function(v) min(k0, k[v])) - 1) / 2)
-  })
-  if(type == 'local') t / Omega else
-  if(type == 'global') sum(t, na.rm = TRUE) / sum(Omega, na.rm = TRUE) else
-  return(list(stratified = data.frame(Omega = Omega, t = t),
-              global = sum(t, na.rm = TRUE) / sum(Omega, na.rm = TRUE)))
-}
-
-# CONSIDER CALCULATING NEIGHBORHOODS OF ALL PRIMARY NODES,
-# AND PASSING THIS LIST TO THE WEDGES FUNCTION
-
-# Wedges through a given node in a given two-mode network (classical)
-classical.wedges <- function(bigraph, Q) {
-    
-}
-
-# Wedges through a given node in a given two-mode network (Opsahl)
-# Agrees globally and locally with bipartite.transitivity on four small networks
-opsahl.wedges <- function(bigraph, Q) {
-    # Identify secondary neighbors of Q
-    n1 <- setdiff(neighborhood(bigraph, 1, Q)[[1]], Q)
-    # If there aren't at least two, return zeroes
-    if(length(n1) < 2) return(c(0, 0))
-    # Identify primary neighborhoods of secondary neighbors of Q
-    n1n1 <- lapply(neighborhood(bigraph, 1, n1), setdiff, c(Q, n1))
-    # Array the 2-paths centered at Q
-    # (Note that these are indices of n1n1, not vertex ids)
-    p <- combn(1:length(n1), 2)
-    # Across the pairs (X, Y) list the numbers of wedges and of closed wedges
-    wedgelist <- do.call(cbind, lapply(1:dim(p)[2], function(j) {
-        # The first node X must have a nonempty neighborhood besides Q
-        if(length(n1n1[[p[1, j]]]) == 0) return(c(0, 0))
-        # Across all choices of P from the non-Q primary neighbors of X
-        do.call(cbind, lapply(n1n1[[p[1, j]]], function(P) {
-            # The second node Y must have a nonempty nbhd besides Q and P
-            Rs <- setdiff(n1n1[[p[2, j]]], P)
-            if(length(Rs) == 0) return(c(0, 0))
-            # Which Rs produce 4-paths (P, X, Q, Y, R) that are closed?
-            Rw <- which(sapply(Rs, function(R) {
-                length(setdiff(intersect(neighborhood(bigraph, 1, P)[[1]],
-                                         neighborhood(bigraph, 1, R)[[1]]),
-                               n1[p[, j]])) > 0
-            }))
-            return(c(length(Rs), length(Rw)))
-        }))
-    }))
-    return(rowSums(wedgelist))
-}
-
-# Wedges through a given node in a given two-mode network (inclusive)
-incl.wedges <- function(bigraph, Q) {
-    # Identify nodes of separation (exactly) 1 and 2 from v
-    n1 <- setdiff(neighborhood(bigraph, 1, Q)[[1]], Q)
-    n2 <- setdiff(neighborhood(bigraph, 2, Q)[[1]], c(n1, Q))
-    # Require at least two nodes of separation 2 for a wedge
-    if(length(n2) < 2) return(c(0, 0))
-    # Identify pairs (P, R) of nodes in n2
-    p <- combn(n2, 2)
-    # Identify which of these pairs form wedges and, of these, which are closed
-    wedgelist <- sapply(1:dim(p)[2], function(j) {
-        # Secondary neighbors of P and of R
-        pn1 <- neighborhood(bigraph, 1, p[1:2, j])
-        # Common neighbors of P and R
-        tn1 <- do.call(intersect, pn1)
-        # If only one secondary links either to Q then no wedges exist
-        if(length(intersect(n1, unique(unlist(pn1)))) == 1) c(0, 0) else
-            # Otherwise one wedge, closed iff Hall criterion is met
-            c(1, as.numeric(hall.criterion(list(intersect(n1, pn1[[1]]),
-                                                intersect(n1, pn1[[2]]),
-                                                tn1))))
-    })
-    return(rowSums(wedgelist))
-}
-
-# Wedges through a given node in a given two-mode network (exclusive)
-excl.wedges <- function(bigraph, Q) {
-    # Identify nodes of separation (exactly) 1 and 2 from v
-    n1 <- setdiff(neighborhood(bigraph, 1, Q)[[1]], Q)
-    n2 <- setdiff(neighborhood(bigraph, 2, Q)[[1]], c(n1, Q)) # rm Q?
-    # Require at least two nodes of separation 2 for a wedge
-    if(length(n2) < 2) return(c(0, 0))
-    # Identify secondary neighbors of primary neighbors P of Q (excluding P)
-    n2n1 <- lapply(n2, function(P) setdiff(neighborhood(bigraph, 1, P)[[1]], P))
-    # Identify indexes of pairs (P, R) of nodes in n2
-    p <- combn(1:length(n2), 2)
-    # Remove pairs (P, R) that have no pairwise exclusive secondary neighbors
-    p <- as.matrix(p[, sapply(1:dim(p)[2], function(j) {
-        (0 < length(setdiff(intersect(n2n1[[p[1, j]]], n1), n2n1[[p[2, j]]])) *
-             length(setdiff(intersect(n2n1[[p[2, j]]], n1), n2n1[[p[1, j]]])))
-    })], nr = 2)
-    # Require at least two nodes of separation 2 for a wedge
-    if(dim(p)[2] == 0) return(c(0, 0))
-    # Identify which of these pairs share a neighbor not shared with Q
-    cl <- sapply(1:dim(p)[2], function(j) {
-        0 < length(setdiff(intersect(n2n1[[p[1, j]]], n2n1[[p[2, j]]]), n1))
-    })
-    # Return the counts
-    return(c(length(cl), sum(cl)))
-}
-
-# Generic two-mode clustering coefficient
-# (Progress bars don't work in apply functions; try pbapply package)
-twomode.transitivity <- function(
-    bigraph, node.type = 0, type = 'global', wedges.fn = opsahl.wedges,
-    vids = which(V(bigraph)$type == node.type)
-    ) {
-    # Check that nodes are of the desired type
-    stopifnot(all(V(bigraph)$type[vids] == node.type))
-    # If global or both, need to look at all vertices
-    Qs <- if(type != 'local') which(V(bigraph)$type == node.type) else vids
-    # Array of 4-paths centered at each Q in Qs
-    wedges <- matrix(unlist(lapply(Qs, function(Q) {
-        # Return wedge and closed wedge counts at Q
-        return(wedges.fn(bigraph, Q))
-    })), nr = 2)
-    if(type == 'global') return(sum(wedges[2, ]) / sum(wedges[1, ]))
-    if(type == 'local') return(wedges[2, ] / wedges[1, ])
-    return(data.frame(V = wedges[1, ], T = wedges[2, ]))
-}
-
-# Opsah'l clustering coefficient
-opsahl.transitivity <- function(
-    bigraph, node.type = 0, type = 'global',
-    vids = which(V(bigraph)$type == node.type)
-    ) {
-    twomode.transitivity(
-        bigraph = bigraph, node.type = node.type, type = type,
-        wedges.fn = opsahl.wedges, vids = vids)
-}
-
-# Inclusive clustering coefficient
-incl.transitivity <- function(
-    bigraph, node.type = 0, type = 'global',
-    vids = which(V(bigraph)$type == node.type)
-    ) {
-    twomode.transitivity(
-        bigraph = bigraph, node.type = node.type, type = type,
-        wedges.fn = incl.wedges, vids = vids)
-}
-
-# Exclusive clustering coefficient
-excl.transitivity <- function(
-    bigraph, node.type = 0, type = 'global',
-    vids = which(V(bigraph)$type == node.type)
-    ) {
-    twomode.transitivity(
-        bigraph = bigraph, node.type = node.type, type = type,
-        wedges.fn = excl.wedges, vids = vids)
-}
-
-
-# FUNCTION: Triad census for undirected networks (only 4 isomorphism classes)
-simple.triad.census <- function(graph, rcnames = FALSE) {
-    tc <- triad.census(as.directed(graph))
-    stopifnot(sum(tc) == choose(vcount(graph), 3))
-    if(is.nan(tc[1])) tc[1] <- choose(vcount(graph), 3) - sum(tc, na.rm = TRUE)
-    stc <- tc[c(1, 3, 11, 16)]
-    if(rcnames) names(stc) <- 0:3
-    return(stc)
-}
-
-# FUNCTION: Two-mode dyad census (equivalently, distribution of edge weights
-# in the one-mode projection when edges are weighted by shared event count)
-twomode.dyad.census <- function(bigraph, type = 0) {
-    graph <- bipartite.projection(bigraph, multiplicity = TRUE)[[1 + type]]
-    disconnected <- choose(vcount(graph), 2) - ecount(graph)
-    return(c('0' = if(disconnected == 0) NULL else disconnected,
-             table(E(graph)$weight)))
-}
-
-# FUNCTION: Produce a one-mode projection onto nodes of the given type
-# so that the names of the projection nodes are the indices of their
-# counterparts in the original bigraph
-onemode.projection <- function(bigraph, type = 0, name = 'name') {
-    if(name == 'id') V(bigraph)$name <- V(bigraph)
-    return(bipartite.projection(bigraph, multiplicity = TRUE)[[1 + type]])
-}
-
-# FUNCTION: Tally disconnected triples with a single edge of weight x
-one.tied.triads <- function(graph) {
-    # Create a data frame of weights and number of nonadjacent nodes
-    counts <- data.frame(
-        x = E(graph)$weight,
-        n = vcount(graph) - sapply(1:ecount(graph), function(i) {
-            length(unique(unlist(neighborhood(graph, 1, get.edge(graph, i)))))
-        })
-    )
-    # Return the aggregated data frame
-    return(aggregate(n ~ x, data = counts, FUN = sum))
-}
-
-# FUNCTION: Count the secondary nodes shared by the given primary nodes
-share.weight <- function(bigraph, vids, name = 'name') {
-    if(name == 'id') vids <- as.numeric(vids)
-    length(Reduce(intersect, neighborhood(bigraph, 1, as.numeric(vids))))
-}
-
-# FUNCTION: Return the weight of the edge between two nodes, or else zero
-edge.weight <- function(graph, vp) {
-    id <- get.edge.ids(graph, vp)
-    if(id == 0) 0 else E(graph)$weight[id]
-}
-
-# FUNCTION: Count open and closed wedges, subtracting triad weight if nonzero
-connected.triples <- function(
-    bigraph, type = 0,
-    # Construct the one-mode projection if it's not already prepared
-    graph = onemode.projection(bigraph, type = type, name = 'id')
+    graph, vids = V(graph), type = 'global', mode = 'approx'
 ) {
-    trips <- do.call(rbind, lapply(1:vcount(graph), function(i) {
-        nbhd <- neighborhood(graph, 1, i)[[1]]
-        # Skip nodes with not enough neighbors
-        if(length(nbhd) < 2) return(NULL)
-        # horizontal array of pairs of neighbors of i
-        v <- combn(setdiff(nbhd, i), 2)
-        # vector of triad weights
-        w <- sapply(1:dim(v)[2], function(j) {
-            share.weight(bigraph, V(graph)$name[c(i, v[, j])])
-        })
-        # horizontal array of sorted triples of edge weights
-        ew <- sapply(1:dim(v)[2], function(j) {
-            sort(c(edge.weight(graph, c(i, v[1, j])),
-                   edge.weight(graph, c(i, v[2, j])),
-                   edge.weight(graph, c(v[1, j], v[2, j]))),
-                 decreasing = TRUE)
-        })
-        # vertical array of pair and triad weights
-        return(data.frame(x = ew[1, ] - w, y = ew[2, ] - w,
-                          z = ew[3, ] - w, w = w))
-    }))
-    return(aggregate(n ~ x * y * z * w, FUN = sum,
-                     data = cbind(trips,
-                                  n = 1 - (trips$z + trips$w > 0) * 2 / 3)))
-}
-
-# FUNCTION: Triad census for two-mode networks
-# (Iterates over nodes)
-twomode.triad.census1 <- function(bigraph, type = 0, rcnames = FALSE,
-                                  verbose = FALSE) {
-    # Drop trivial cases
-    if(vcount(bigraph) == 0) return(matrix(0, nr = 0, nc = 0))
-    # Create one-mode projection
-    graph <- onemode.projection(bigraph, type = type, name = 'id')
-    
-    # Find maximum values of x and of w
-    max.x <- max(E(graph)$weight)
-    # Initialize matrix (overestimating the number of columns)
-    C <- as.data.frame(matrix(0, nr = choose(max.x + 3, 3), nc = max.x + 1))
-    
-    # Tally one-tied triads
-    ot <- one.tied.triads(graph)
-    # Insert the totals at the proper entries of C
-    # (No repeats, so no information loss)
-    C[sapply(ot$x, function(x) partition.position(c(x, 0, 0))) + 1, 1] <- ot$n
-    if(verbose) print('One-tied triads tallied')
-    
-    # Tally connected triples (be sure to specify consistent type)
-    ct <- connected.triples(bigraph, type = type, graph = graph)
-    # Trim any unnecessary columns
-    max.w <- max(ct$w)
-    C <- C[, 1:(max.w + 1)]
-    # For each value of w:
-    for(w in 0:max.w) {
-        if(verbose) print(paste('Tallying weight-', w, ' connected triples',
-                                sep = ''))
-        # Which rows have weight w?
-        rs <- which(ct$w == w)
-        # Insert the totals at the proper rows in column w + 1 of C
-        # (No repeats, so no information loss)
-        C[sapply(rs, function(i) {
-            partition.position(as.numeric(ct[i, 1:3])) + 1
-        }), w + 1] <- ct$n[rs]
-    }
-    if(verbose) print('Connected triples tallied')
-    
-    # The remaining triads share no secondary nodes; count them as empty
-    # (No triads should have yet been counted as empty)
-    C[1, 1] <- choose(vcount(graph), 3) - sum(C)
-    # Clear names
-    colnames(C) <- NULL
-    if(rcnames) {
-        colnames(C) <- 0:(ncol(C) - 1)
-        rownames(C) <- sapply(0:(nrow(C) - 1), function(i) paste(
-            '(', paste(position.partition(i, k = 3), collapse = ','),
-            ')', sep = ''))
-    }
-    return(as.matrix(C))
-}
-
-# FUNCTION: Tally triples with exactly two edges among them
-two.tied.triads <- function(graph) {
-    # List of open wedges (shortest paths of length 2) up to reversal
-    p2 <- do.call(cbind, lapply(V(graph)[1:(vcount(graph) - 1)], function(v) {
-        d2 <- as.numeric(V(graph)[
-            which(shortest.paths(graph, v, (v + 1):vcount(graph),
-                                 weights = NA) == 2) + v
-            ])
-        gasp <- get.all.shortest.paths(graph, v, d2, weights = NA)[[1]]
-        do.call(cbind, gasp[sapply(gasp, length) == 3])
-    }))
-    # Horizontal array of sorted edge weight pairs
-    if(is.null(p2)) return(NULL) else  wedges <- sapply(
-        1:dim(p2)[2],
-        function(j) sort(c(edge.weight(graph, c(p2[1, j], p2[2, j])),
-                           edge.weight(graph, c(p2[2, j], p2[3, j]))),
-                         decreasing = TRUE))
-    # Make wedges into a data frame
-    wedges <- data.frame(x = wedges[1, ], y = wedges[2, ], n = 1)
-    # Return the aggregated data frame
-    return(aggregate(n ~ x * y, FUN = sum,
-                     data = cbind(wedges, n = rep(1, n = dim(wedges)[1]))))
-}
-
-# FUNCTION: Tally triangles, subtracting triad weight if nonzero
-three.tied.triads <- function(
-    bigraph, type = 0,
-    # Construct the one-mode projection if it's not already prepared
-    graph = onemode.projection(bigraph, type = type, name = 'id')
-) {
-    # Triangles are 3-cliques in the one-mode projection
-    t <- do.call(cbind, cliques(graph, min = 3, max = 3))
-    # If there are no triangles then return an empty list
-    if(is.null(t)) return(NULL)
-    # Vector of triad weights
-    w <- sapply(1:dim(t)[2], function(j) {
-        share.weight(bigraph, V(graph)$name[c(t[1, j], t[2, j], t[3, j])])
+    stopifnot(mode == 'approx')
+    k <- degree(graph)
+    t <- transitivity(graph, vids = vids, type = 'local') * choose(k[vids], 2)
+    Omega <- sapply(neighborhood(graph, 1, nodes = vids), function(vec) {
+        k0 <- length(vec) - 1
+        if(k0 < 1) NaN else
+            floor(sum(sapply(vec[-1], function(v) min(k0, k[v])) - 1) / 2)
     })
-    # Horizontal array of sorted triples of edge weights
-    ew <- sapply(1:dim(t)[2], function(j) {
-        sort(c(edge.weight(graph, c(t[1, j], t[2, j])),
-               edge.weight(graph, c(t[2, j], t[3, j])),
-               edge.weight(graph, c(t[1, j], t[3, j]))),
-             decreasing = TRUE)
-    })
-    tris <- data.frame(x = ew[1, ] - w, y = ew[2, ] - w,
-                       z = ew[3, ] - w, w = w)
-    return(aggregate(n ~ x * y * z * w, data = cbind(tris, n = 1), FUN = sum))
-}
-
-# FUNCTION: Triad census for two-mode networks
-# (Iterates over paths of length 2)
-twomode.triad.census2 <- function(bigraph, type = 0, rcnames = FALSE,
-                                  verbose = FALSE) {
-    # Drop trivial cases
-    if(vcount(bigraph) == 0) return(matrix(0, nr = 0, nc = 0))
-    # Create one-mode projection
-    graph <- onemode.projection(bigraph, type = type, name = 'id')
-    # Trivial case
-    if(ecount(graph) == 0) return(matrix(choose(vcount(graph), 3),
-                                         nr = 1, nc = 1))
-    
-    # Find maximum values of x and of w
-    max.x <- max(E(graph)$weight)
-    # Initialize matrix (overestimating the number of columns)
-    C <- as.data.frame(matrix(0, nr = choose(max.x + 3, 3), nc = max.x + 1))
-    
-    # Tally one-tied triads
-    ot <- one.tied.triads(graph)
-    # Insert the totals at the proper entries of C
-    # (Aggregated, so no repeats, so no information loss)
-    if(length(ot) > 0) C[sapply(ot$x, function(x) {
-        partition.position(c(x, 0, 0))
-    }) + 1, 1] <- ot$n
-    if(verbose) print('One-tied triads tallied')
-    
-    # Tally two-tied triads
-    tt <- two.tied.triads(graph)
-    # Insert the totals at the proper entries of C
-    # (Aggregated, so no repeats, so no information loss)
-    if(!is.null(tt)) C[sapply(1:dim(tt)[1], function(i) {
-        partition.position(c(tt[i, 1], tt[i, 2], 0))
-    }) + 1, 1] <- tt$n
-    if(verbose) print('Two-tied triads tallied')
-    
-    # Tally triangles
-    tht <- three.tied.triads(bigraph, type = type, graph = graph)
-    # If there are any...
-    if(!is.null(tht)) {
-        # Trim any unnecessary columns
-        max.w <- max(tht$w)
-        C <- C[, 1:(max.w + 1)]
-        # For each value of w:
-        for(w in 0:max.w) {
-            if(verbose) print(paste('Tallying weight-', w, ' three-tied triads',
-                                    sep = ''))
-            # Which rows have weight w?
-            rs <- which(tht$w == w)
-            # Insert the totals at the proper rows in column w + 1 of C
-            # (No repeats, so no information loss)
-            if(length(rs) > 0) C[sapply(rs, function(i) {
-                partition.position(as.numeric(tht[i, 1:3])) + 1
-            }), w + 1] <- tht$n[rs]
-        }
-    }
-    if(verbose) print('Three-tied triads tallied')
-    
-    # The remaining triads share no secondary nodes; count them as empty
-    # (No triads should have yet been counted as empty)
-    C[1, 1] <- choose(vcount(graph), 3) - sum(C)
-    # Reality check: The total triad tally should equal |V(graph)|-choose-3
-    stopifnot(sum(C) == choose(vcount(graph), 3))
-    # Clear names
-    colnames(C) <- NULL
-    if(rcnames) {
-        colnames(C) <- 0:(ncol(C) - 1)
-        rownames(C) <- sapply(0:(nrow(C) - 1), function(i) paste(
-            '(', paste(position.partition(i, k = 3), collapse = ','),
-            ')', sep = ''))
-    }
-    return(as.matrix(C))
-}
-
-# Trials on small networks indicate that version 2 is substantially faster;
-# version 1 is retained as a check
-twomode.triad.census <- twomode.triad.census2
-
-# Derive clustering coefficients from two-mode triad census
-tmtc2cc <- function(tc, S.fn, F.fn, num.denom = FALSE) {
-    if(dim(tc)[1] * dim(tc)[2] == 0) return(NA)
-    S.c <- sum(sapply(1:dim(tc)[2], function(j) sapply(
-        1:dim(tc)[1], function(i) {
-            if(tc[i, j] == 0) 0 else
-                S.fn(position.partition(3, i - 1), j - 1) * tc[i, j]})))
-    F.c <- sum(sapply(1:dim(tc)[2], function(j) sapply(
-        1:dim(tc)[1], function(i) {
-            if(tc[i, j] == 0) 0 else
-                F.fn(position.partition(3, i - 1), j - 1) * tc[i, j]})))
-    return(if(num.denom) c(S.c, S.c + F.c) else S.c / (S.c + F.c))}
-
-# Classical clustering coefficient on the one-mode projection
-# tc must be a matrix with rows indexed as partition.position
-tmtc2C <- function(tc, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(by.triangle, 1, 3) * ((L[3] > 0) | (w > 0)),
-    function(L, w) ((L[2] > 0) & (L[3] == 0) & (w == 0)), num.denom = num.denom)
-
-# Global Opsahl clustering coefficient
-# (agrees with bipartite.transitivity)
-# tc must be a matrix with rows indexed as partition.position
-tmtc2CO <- function(tc, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(
-        by.triangle,
-        L[1] * L[2] * L[3] +
-            (L[1] * L[2] + L[1] * L[3] + L[2] * L[3]) * w +
-            sum(L) * w * (w - 1) +
-            w * (w - 1) * (w - 2),
-        L[1] * L[2] * (L[3] + w > 0) + L[1] * L[3] + L[2] * L[3] +
-            L[1] * w * (L[2] > 0 | w > 1) + L[1] * w * (L[3] > 0 | w > 1) +
-            L[2] * w + L[2] * w * (L[3] > 0 | w > 1) +
-            2 * L[3] * w +
-            2 * choose(w, 2) * max(3 * (w > 2), length(which(L > 0)))),
-    function(L, w) L[1] * L[2] * (L[3] + w == 0) +
-        L[1] * (L[2] == 0 & w == 1) + L[1] * (L[3] == 0 & w == 1) +
-        L[2] * (L[3] == 0 & w == 1) +
-        2 * choose(w, 2) * min(3 * (w == 2), length(which(L == 0))),
-    num.denom = num.denom)
-
-# Global inclusive clustering coefficient
-# (existence of not necessarily induced 4-paths and 6-cycles)
-# tc must be a matrix with rows indexed as partition.position
-tmtc2Cin <- function(tc, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(by.triangle, 1, 3) * (length(which(L > 0)) + w > 2),
-    function(L, w) (L[2] > 0 & L[3] == 0 & w == 0) +
-        2 * (L[1] > 0 & L[2] == 0 & w == 1) +
-        3 * (L[1] == 0 & w == 2),
-    num.denom = num.denom)
-
-# Global exclusive clustering coefficient
-# (existence of induced 4-paths and 6-cycles)
-# (agrees with exclusive.transitivity)
-# tc must be a matrix with rows indexed as partition.position
-tmtc2Cex <- function(tc, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(by.triangle, 1, 3) * (L[3] > 0),
-    function(L, w) ((L[2] > 0) & (L[3] == 0)), num.denom)
-
-# Pairwise weight–resolved exclusive clustering
-# tc must be a matrix with rows indexed as partition.position
-tmtc2Cexij <- function(tc, i, j, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(by.triangle, 1, 3) * ((L[2] >= i) & (L[3] >= j)),
-    function(L, w) ((L[2] >= i) & (L[3] < j)), num.denom)
-
-# Triad weight–resolved exclusive clustering
-# tc must be a matrix with rows indexed as partition.position
-tmtc2Cexw <- function(tc, ww, num.denom = FALSE, by.triangle = FALSE) tmtc2cc(
-    tc,
-    function(L, w) ifelse(by.triangle, 1, 3) * ((L[3] > 0) & (w == ww)),
-    function(L, w) ((L[2] > 0) & (L[3] == 0) & (w == ww)), num.denom)
-
-# Make a list of matrices all the same dimensions by appending zeroes
-sync.mat <- function(lst) {
-    sync.dim <- apply(sapply(lst, dim), 1, max)
-    return(lapply(lst, function(mat) {
-        cbind(rbind(mat,
-                    matrix(0, nr = sync.dim[1] - dim(mat)[1],
-                           nc = dim(mat)[2])),
-              matrix(0, nr = sync.dim[1], nc = sync.dim[2] - dim(mat)[2]))
-    }))
-}
-
-# Take the quotient of the two-mode triad census by structural equivalence
-# (4, 2) matrix with rows labeled by (0, 1) lambas and columns by (0, 1) ws
-tmtc2setc <- function(tmtc) {
-    # Trivial cases
-    if(sum(tmtc) == 0) return(matrix(0, nr = 4, nc = 2))
-    if(all(dim(tmtc) == 1)) return(matrix(c(tmtc[1, 1], rep(0, 7)),
-                                          nr = 4, nc = 2))
-    # No. edges (1, 2, or 3) induced by each nonempty lambda with w = 0
-    pw.counts <- sapply(1:(dim(tmtc)[1] - 1), function(i) {
-        length(which(position.partition(i, k = 3) > 0))
-    })
-    # Which rows connect 1, 2, and 3 pairs
-    wh <- lapply(1:3, function(i) which(pw.counts == i) + 1)
-    return(matrix(c(
-        # Empty triads
-        tmtc[1, 1],
-        # No triad event; 1, 2, and 3 pairs connected
-        sum(tmtc[wh[[1]], 1]),
-        sum(tmtc[wh[[2]], 1]),
-        sum(tmtc[wh[[3]], 1]),
-        # Committees with no pairwise events
-        sum(tmtc[1, 2:dim(tmtc)[2]]),
-        # Triad event; 1, 2, and 3 pairs connected
-        sum(tmtc[wh[[1]], 2:dim(tmtc)[2]]),
-        sum(tmtc[wh[[2]], 2:dim(tmtc)[2]]),
-        sum(tmtc[wh[[3]], 2:dim(tmtc)[2]])
-    ), nr = 4, nc = 2))
-}
-
-twomode.structural.triad.census <- function(bigraph, type = 0, rcnames = FALSE,
-                                            verbose = FALSE) {
-    tmtc2setc(twomode.triad.census(bigraph, type, rcnames, verbose))
-}
-
-# Recover the simple triad census from the two-mode triad census
-tmtc2stc <- function(tmtc) {
-    # Trivial cases
-    if(sum(tmtc) == 0) return(rep(0, 4))
-    if(all(dim(tmtc) == 1)) return(c(tmtc[1, 1], 0, 0, 0))
-    # Number of edges (1, 2, or 3) induced by each lambda other than c(0, 0, 0)
-    pw.counts <- sapply(1:(dim(tmtc)[1] - 1), function(i) {
-        length(which(position.partition(i, k = 3) > 0))
-    })
-    return(c(
-        # Empty triads all have lambda = c(0, 0, 0), w = 0
-        tmtc[1, 1],
-        # Dyads
-        sum(tmtc[which(pw.counts == 1) + 1, 1]),
-        # Intransitive wedges
-        sum(tmtc[which(pw.counts == 2) + 1, 1]),
-        # Triangles, including all columns w > 0
-        sum(tmtc[which(pw.counts == 3) + 1, 1]) +
-            ifelse(dim(tmtc)[2] == 1, 0, sum(tmtc[, 2:dim(tmtc)[2]]))))
-}
-
-# Subgraph at a given set of actors and all events attended by at least two
-schedule <- function(bigraph, v) {
-    stopifnot(all(V(bigraph)$type[v] == 0))
-    events <- unlist(neighborhood(bigraph, 1, v))
-    tab <- table(events)
-    coattended <- as.numeric(names(tab)[tab > 1])
-    return(induced.subgraph(bigraph, c(v, coattended)))
-}
-
-# Class of a triad
-triad.class <- function(bigraph, v) {
-    stopifnot(all(V(bigraph)$type[v] == 0) & length(v) == 3)
-    pairs <- neighborhood(bigraph, 1, v)
-    w <- length(which(table(unlist(pairs)) > 2))
-    lambda <- sort(sapply(pairs, length) - 1 - w, decreasing = TRUE)
-    return(list(lambda = lambda, w = w))
-}
-
-
-# FUNCTION: Given MR data for window + increment, compute two vectors:
-# L = vector indexed by node of number of pairs of unlinked neighbors in G_w
-# C = vector indexed by node of number of these pairs linked in G_(w+i)
-# Global proportion is sum(C) / sum(L)
-# Average opportunity-dependent local proportion is
-# sum(C[degree(g) == k]) / sum(L[degree(g) == k])
-author.edgelist <- function(data) {
-    au <- unlist(lapply(authors(data), function(vec) {
-        if(length(vec) == 1) c() else combn(vec, m = 2)
-    }))
-    if(is.null(unlist(unique(au)))) return(matrix('', nr = 0, nc = 2))
-    return(as.data.frame(t(matrix(au, nr = 2)), stringsAsFactors = FALSE))
-}
-vee.closure <- function(data, window, increment) {
-    el.0 <- author.edgelist(data[data$year %in% window, ])
-    if(dim(el.0)[1] == 0) return(NA)
-    el.1 <- author.edgelist(data[data$year %in% increment, ])
-    g.0 <- simplify(graph.data.frame(el.0, directed = FALSE))
-    denom <- sum(sapply(neighborhood(g.0, order = 2), length) -
-                     degree(g.0) - 1) / 2
-    el <- data.frame(V1 = c(el.0[, 1], el.1[, 1]),
-                     V2 = c(el.0[, 2], el.1[, 2]),
-                     old = c(rep(TRUE, dim(el.0)[1]), rep(FALSE, dim(el.1)[1])))
-    g <- simplify(graph.data.frame(el, directed = FALSE),
-                  edge.attr.comb = list(old = any))
-    E.new <- which(!E(g)$old)
-    num <- sum(sapply(E.new, function(e) {
-        ge <- get.edge(g, e)
-        if(!(all(ge <= vcount(g.0)))) 0 else
-            (shortest.paths(g.0, ge[1], ge[2]) == 2)
-    }))
-    num / denom
+    if(type == 'local') t / Omega else
+        if(type == 'global') sum(t, na.rm = TRUE) / sum(Omega, na.rm = TRUE) else
+            return(list(stratified = data.frame(Omega = Omega, t = t),
+                        global = sum(t, na.rm = TRUE) / sum(Omega, na.rm = TRUE)))
 }
 
 
